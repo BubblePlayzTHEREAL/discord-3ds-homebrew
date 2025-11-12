@@ -63,6 +63,9 @@ bool discord_fetch_users(DiscordClient* client);
 // Send a message
 bool discord_send_message(DiscordClient* client, const char* message);
 
+// Switch to a different server
+bool discord_switch_server(DiscordClient* client, const char* server_id);
+
 // Cleanup
 void discord_cleanup(DiscordClient* client);
 

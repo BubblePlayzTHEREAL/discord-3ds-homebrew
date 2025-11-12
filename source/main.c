@@ -37,9 +37,17 @@ int main(int argc, char* argv[]) {
     
     // Initialize network
     Result ret = 0;
-    ret = socInit((u32*)memalign(0x1000, 0x100000), 0x100000);
+    u32* soc_buffer = (u32*)memalign(0x1000, 0x100000);
+    if (!soc_buffer) {
+        printf("Failed to allocate SOC buffer\n");
+        gfxExit();
+        return 1;
+    }
+    
+    ret = socInit(soc_buffer, 0x100000);
     if (R_FAILED(ret)) {
         printf("socInit failed: 0x%08lX\n", ret);
+        free(soc_buffer);
         gfxExit();
         return 1;
     }
@@ -50,7 +58,17 @@ int main(int argc, char* argv[]) {
     // Initialize UI
     ui_init();
     
-    DiscordClient client;
+    // Allocate DiscordClient on heap to avoid stack overflow
+    DiscordClient* client = (DiscordClient*)malloc(sizeof(DiscordClient));
+    if (!client) {
+        printf("Failed to allocate DiscordClient\n");
+        ui_cleanup();
+        socExit();
+        free(soc_buffer);
+        gfxExit();
+        return 1;
+    }
+    
     UIState ui_state = {0};
     char token[128] = {0};
     
@@ -78,8 +96,10 @@ int main(int argc, char* argv[]) {
             gspWaitForVBlank();
         }
         
+        free(client);
         ui_cleanup();
         socExit();
+        free(soc_buffer);
         gfxExit();
         return 0;
     }
@@ -87,10 +107,10 @@ int main(int argc, char* argv[]) {
     printf("Token loaded!\n");
     printf("Initializing Discord client...\n");
     
-    discord_init(&client, token);
+    discord_init(client, token);
     
     printf("Connecting to Discord...\n");
-    if (!discord_connect(&client)) {
+    if (!discord_connect(client)) {
         printf("Failed to connect to Discord!\n");
         printf("Check your token and internet.\n");
         printf("\nPress START to exit.\n");
@@ -108,9 +128,11 @@ int main(int argc, char* argv[]) {
             gspWaitForVBlank();
         }
         
-        discord_cleanup(&client);
+        discord_cleanup(client);
+        free(client);
         ui_cleanup();
         socExit();
+        free(soc_buffer);
         gfxExit();
         return 0;
     }
@@ -118,8 +140,8 @@ int main(int argc, char* argv[]) {
     printf("Connected! Loading data...\n");
     
     // Initial data fetch
-    discord_fetch_servers(&client);
-    discord_fetch_messages(&client);
+    discord_fetch_servers(client);
+    discord_fetch_messages(client);
     
     // Main loop
     while (aptMainLoop()) {
@@ -132,11 +154,11 @@ int main(int argc, char* argv[]) {
         }
         
         // Handle input
-        ui_handle_input(&client, &ui_state, kDown, kHeld);
+        ui_handle_input(client, &ui_state, kDown, kHeld);
         
         // Render UI
-        ui_render_top_screen(&client, &ui_state);
-        ui_render_bottom_screen(&client, &ui_state);
+        ui_render_top_screen(client, &ui_state);
+        ui_render_bottom_screen(client, &ui_state);
         
         gfxFlushBuffers();
         gfxSwapBuffers();
@@ -144,9 +166,11 @@ int main(int argc, char* argv[]) {
     }
     
     // Cleanup
-    discord_cleanup(&client);
+    discord_cleanup(client);
+    free(client);
     ui_cleanup();
     socExit();
+    free(soc_buffer);
     gfxExit();
     
     return 0;

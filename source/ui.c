@@ -134,17 +134,19 @@ void ui_handle_input(DiscordClient* client, UIState* state, u32 kDown, u32 kHeld
         // Previous server
         if (state->selected_server > 0) {
             state->selected_server--;
-            strcpy(client->current_server_id, client->servers[state->selected_server].id);
-            discord_fetch_messages(client);
-            discord_fetch_users(client);
+            if (discord_switch_server(client, client->servers[state->selected_server].id)) {
+                discord_fetch_messages(client);
+                discord_fetch_users(client);
+            }
         }
     } else if (kDown & KEY_R) {
         // Next server
         if (state->selected_server < client->server_count - 1) {
             state->selected_server++;
-            strcpy(client->current_server_id, client->servers[state->selected_server].id);
-            discord_fetch_messages(client);
-            discord_fetch_users(client);
+            if (discord_switch_server(client, client->servers[state->selected_server].id)) {
+                discord_fetch_messages(client);
+                discord_fetch_users(client);
+            }
         }
     } else if (kDown & KEY_DUP) {
         // Scroll messages up
