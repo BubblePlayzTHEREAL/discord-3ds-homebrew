@@ -96,110 +96,68 @@ void ui_render_bottom_screen(DiscordClient* client, UIState* state) {
     
     // Chat input section
     printf("\n\x1b[1;37m=== Chat Input ===\x1b[0m\n");
-    if (state->typing_mode) {
-        printf("\x1b[43;30m[TYPING]\x1b[0m\n");
-        printf("> %s_\n", state->input_buffer);
-    } else {
-        printf("\x1b[47;30m[Press X to type]\x1b[0m\n");
-        printf("> \n");
-    }
+    printf("\x1b[47;30m[Press X for keyboard]\x1b[0m\n");
+    printf("\n");
     
     // Controls
     printf("\n\x1b[34m-------------------\x1b[0m\n");
     printf("\x1b[33mL/R:\x1b[0m Change server\n");
-    printf("\x1b[33mX:\x1b[0m Type message\n");
-    printf("\x1b[33mA:\x1b[0m Send | \x1b[33mB:\x1b[0m Cancel\n");
+    printf("\x1b[33mX:\x1b[0m Open keyboard\n");
+    printf("\x1b[33mY:\x1b[0m Refresh messages\n");
+    printf("\x1b[33mDPAD:\x1b[0m Scroll messages\n");
     printf("\x1b[33mSTART:\x1b[0m Exit\n");
 }
 
 void ui_handle_input(DiscordClient* client, UIState* state, u32 kDown, u32 kHeld) {
-    if (state->typing_mode) {
-        // Handle text input mode
-        if (kDown & KEY_A) {
-            // Send message
-            if (strlen(state->input_buffer) > 0) {
-                discord_send_message(client, state->input_buffer);
-                memset(state->input_buffer, 0, sizeof(state->input_buffer));
-                state->input_cursor = 0;
-                state->typing_mode = false;
-                // Refresh messages
-                discord_fetch_messages(client);
-            }
-        } else if (kDown & KEY_B) {
-            // Cancel typing
-            memset(state->input_buffer, 0, sizeof(state->input_buffer));
-            state->input_cursor = 0;
-            state->typing_mode = false;
-        } else if (kDown & KEY_X) {
-            // Backspace
-            int len = strlen(state->input_buffer);
-            if (len > 0) {
-                state->input_buffer[len - 1] = '\0';
-                state->input_cursor--;
-            }
-        } else {
-            // Simple character input using buttons
-            // This is a simplified version - real implementation would use touchscreen keyboard
-            if (kDown & KEY_DRIGHT) {
-                int len = strlen(state->input_buffer);
-                if (len < MAX_TEXT_LENGTH - 2) {
-                    strcat(state->input_buffer, "a");
-                }
-            } else if (kDown & KEY_DLEFT) {
-                int len = strlen(state->input_buffer);
-                if (len < MAX_TEXT_LENGTH - 2) {
-                    strcat(state->input_buffer, " ");
-                }
-            } else if (kDown & KEY_DUP) {
-                int len = strlen(state->input_buffer);
-                if (len < MAX_TEXT_LENGTH - 20) {
-                    strcat(state->input_buffer, "Hello! ");
-                }
-            } else if (kDown & KEY_DDOWN) {
-                int len = strlen(state->input_buffer);
-                if (len < MAX_TEXT_LENGTH - 2) {
-                    strcat(state->input_buffer, "!");
-                }
-            }
+    // Normal mode controls
+    if (kDown & KEY_X) {
+        // Open touchscreen keyboard for text input
+        SwkbdState swkbd;
+        char text_buffer[MAX_TEXT_LENGTH];
+        SwkbdButton button = SWKBD_BUTTON_NONE;
+        
+        swkbdInit(&swkbd, SWKBD_TYPE_NORMAL, 2, -1);
+        swkbdSetHintText(&swkbd, "Enter message...");
+        swkbdSetValidation(&swkbd, SWKBD_NOTEMPTY_NOTBLANK, 0, 0);
+        
+        button = swkbdInputText(&swkbd, text_buffer, sizeof(text_buffer));
+        
+        if (button == SWKBD_BUTTON_CONFIRM && strlen(text_buffer) > 0) {
+            // Send the message
+            discord_send_message(client, text_buffer);
         }
-    } else {
-        // Normal mode controls
-        if (kDown & KEY_X) {
-            // Enter typing mode
-            state->typing_mode = true;
-            memset(state->input_buffer, 0, sizeof(state->input_buffer));
-            state->input_cursor = 0;
-        } else if (kDown & KEY_Y) {
-            // Refresh messages
+        // If SWKBD_BUTTON_LEFT (cancel) or empty, do nothing
+    } else if (kDown & KEY_Y) {
+        // Refresh messages
+        discord_fetch_messages(client);
+    } else if (kDown & KEY_L) {
+        // Previous server
+        if (state->selected_server > 0) {
+            state->selected_server--;
+            strcpy(client->current_server_id, client->servers[state->selected_server].id);
             discord_fetch_messages(client);
-        } else if (kDown & KEY_L) {
-            // Previous server
-            if (state->selected_server > 0) {
-                state->selected_server--;
-                strcpy(client->current_server_id, client->servers[state->selected_server].id);
-                discord_fetch_messages(client);
-                discord_fetch_users(client);
-            }
-        } else if (kDown & KEY_R) {
-            // Next server
-            if (state->selected_server < client->server_count - 1) {
-                state->selected_server++;
-                strcpy(client->current_server_id, client->servers[state->selected_server].id);
-                discord_fetch_messages(client);
-                discord_fetch_users(client);
-            }
-        } else if (kDown & KEY_DUP) {
-            // Scroll messages up
-            if (state->message_scroll > 0) {
-                state->message_scroll--;
-            }
-        } else if (kDown & KEY_DDOWN) {
-            // Scroll messages down
-            if (state->message_scroll < client->message_count - 1) {
-                state->message_scroll++;
-            }
+            discord_fetch_users(client);
+        }
+    } else if (kDown & KEY_R) {
+        // Next server
+        if (state->selected_server < client->server_count - 1) {
+            state->selected_server++;
+            strcpy(client->current_server_id, client->servers[state->selected_server].id);
+            discord_fetch_messages(client);
+            discord_fetch_users(client);
+        }
+    } else if (kDown & KEY_DUP) {
+        // Scroll messages up
+        if (state->message_scroll > 0) {
+            state->message_scroll--;
+        }
+    } else if (kDown & KEY_DDOWN) {
+        // Scroll messages down
+        if (state->message_scroll < client->message_count - 1) {
+            state->message_scroll++;
         }
     }
+}
 }
 
 void ui_cleanup(void) {

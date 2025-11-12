@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <malloc.h>
 #include <3ds.h>
 
 #include "discord_api.h"
@@ -33,6 +34,16 @@ bool read_token(char* token, size_t max_len) {
 int main(int argc, char* argv[]) {
     // Initialize services
     gfxInitDefault();
+    
+    // Initialize network
+    Result ret = 0;
+    ret = socInit((u32*)memalign(0x1000, 0x100000), 0x100000);
+    if (R_FAILED(ret)) {
+        printf("socInit failed: 0x%08lX\n", ret);
+        gfxExit();
+        return 1;
+    }
+    
     consoleInit(GFX_TOP, NULL);
     consoleInit(GFX_BOTTOM, NULL);
     
@@ -68,6 +79,7 @@ int main(int argc, char* argv[]) {
         }
         
         ui_cleanup();
+        socExit();
         gfxExit();
         return 0;
     }
@@ -98,6 +110,7 @@ int main(int argc, char* argv[]) {
         
         discord_cleanup(&client);
         ui_cleanup();
+        socExit();
         gfxExit();
         return 0;
     }
@@ -133,6 +146,7 @@ int main(int argc, char* argv[]) {
     // Cleanup
     discord_cleanup(&client);
     ui_cleanup();
+    socExit();
     gfxExit();
     
     return 0;
