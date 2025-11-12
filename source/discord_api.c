@@ -449,6 +449,59 @@ bool discord_send_message(DiscordClient* client, const char* message) {
     return true;
 }
 
+bool discord_switch_server(DiscordClient* client, const char* server_id) {
+    if (!client->connected || !server_id) {
+        return false;
+    }
+    
+    // Update current server ID
+    strncpy(client->current_server_id, server_id, sizeof(client->current_server_id) - 1);
+    client->current_server_id[sizeof(client->current_server_id) - 1] = '\0';
+    
+    // Clear current channel ID
+    client->current_channel_id[0] = '\0';
+    
+    // Fetch channels for the server
+    char endpoint[256];
+    snprintf(endpoint, sizeof(endpoint), "/guilds/%s/channels", server_id);
+    char* channels_response = discord_api_get(client, endpoint);
+    
+    if (!channels_response) {
+        printf("Failed to fetch channels for server\n");
+        return false;
+    }
+    
+    jsmntok_t channel_tokens[256];
+    int ch_count = json_parse(channels_response, channel_tokens, 256);
+    
+    if (ch_count > 0 && channel_tokens[0].type == JSMN_ARRAY && channel_tokens[0].size > 0) {
+        // Find first text channel
+        for (int i = 1; i < ch_count; i++) {
+            jsmntok_t* type_token = json_find_token(channels_response, &channel_tokens[i], ch_count - i, "type");
+            if (type_token) {
+                char type_str[16];
+                json_get_string(channels_response, type_token, type_str, sizeof(type_str));
+                // Type 0 is text channel
+                if (strcmp(type_str, "0") == 0) {
+                    jsmntok_t* ch_id_token = json_find_token(channels_response, &channel_tokens[i], ch_count - i, "id");
+                    if (ch_id_token) {
+                        json_get_string(channels_response, ch_id_token, client->current_channel_id, sizeof(client->current_channel_id));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    
+    free(channels_response);
+    
+    // Clear message count since we're switching to a different server
+    client->message_count = 0;
+    client->user_count = 0;
+    
+    return strlen(client->current_channel_id) > 0;
+}
+
 void discord_cleanup(DiscordClient* client) {
     client->connected = false;
     memset(client->token, 0, sizeof(client->token));
