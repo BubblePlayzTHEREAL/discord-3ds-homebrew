@@ -77,23 +77,13 @@ The bottom screen shows:
 
 ## Controls
 
-### Normal Mode
 - **D-Pad Up/Down**: Scroll through messages
 - **L/R Buttons**: Switch between servers
 - **Y Button**: Refresh messages
-- **X Button**: Enter typing mode
+- **X Button**: Open touchscreen keyboard to type and send messages
 - **START**: Exit application
 
-### Typing Mode
-- **D-Pad Up**: Add "Hello! " to message
-- **D-Pad Right**: Add "a" to message
-- **D-Pad Left**: Add space to message
-- **D-Pad Down**: Add "!" to message
-- **X Button**: Backspace
-- **A Button**: Send message
-- **B Button**: Cancel and exit typing mode
-
-*Note: Full text input using touchscreen keyboard is planned for a future update.*
+The app uses the native 3DS touchscreen keyboard for text input, making it easy to compose messages!
 
 ## Building from Source
 
@@ -159,24 +149,36 @@ discord-3ds-homebrew/
 ### Architecture
 - **Language**: C
 - **Graphics**: libctru console API
-- **Networking**: Mock implementation (real API integration planned)
+- **Networking**: libcurl with mbedTLS for HTTPS
+- **JSON Parsing**: jsmn (lightweight JSON parser)
+- **Text Input**: Native SwkbdButton (touchscreen keyboard)
 - **Build System**: Make with devkitARM
 
+### Features
+- ✅ **Real Discord API**: Full integration with Discord's REST API v10
+- ✅ **Touchscreen Keyboard**: Native 3DS keyboard for message input
+- ✅ **Message Reading**: Fetch and display messages from channels
+- ✅ **Message Sending**: Send messages to channels via API
+- ✅ **Server Browsing**: View and switch between your Discord servers
+- ✅ **User List**: See members in your current server
+- ✅ **Secure**: Uses HTTPS with SSL/TLS verification
+
 ### Current Limitations
-- Mock data instead of real Discord API (full API integration coming soon)
-- Limited text input (touchscreen keyboard planned)
-- No real-time message updates (polling/WebSocket planned)
+- Manual message refresh (press Y to update)
+- No real-time updates (WebSocket not yet implemented)
 - Console-based UI (graphics-based UI planned)
+- No image/attachment support yet
+- No rich embed rendering
 
 ### Planned Features
-- [ ] Real Discord API integration with libcurl
 - [ ] WebSocket support for real-time updates
-- [ ] Touchscreen keyboard for text input
+- [ ] Auto-refresh messages
 - [ ] Rich embed support
 - [ ] Image/attachment viewing
 - [ ] Voice channel indication
 - [ ] Notifications
 - [ ] Custom themes
+- [ ] Direct messages support
 
 ## Contributing
 
