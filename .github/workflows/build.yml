@@ -36,6 +36,29 @@ jobs:
       id: date
       run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
     
+    - name: Generate QR Code
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        # Install qrencode for QR code generation
+        apt-get update && apt-get install -y qrencode
+        
+        # Generate the download URL for the release
+        TAG_NAME="build-${{ steps.date.outputs.date }}-${{ github.sha }}"
+        DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${TAG_NAME}/discord-3ds.3dsx"
+        
+        # Generate QR code as PNG
+        qrencode -s 10 -o discord-3ds-qr.png "$DOWNLOAD_URL"
+        
+        echo "Generated QR code for: $DOWNLOAD_URL"
+    
+    - name: Upload QR Code artifact
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: actions/upload-artifact@v4
+      with:
+        name: discord-3ds-qr
+        path: discord-3ds-qr.png
+        if-no-files-found: error
+    
     - name: Create Release (on push to main)
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       uses: softprops/action-gh-release@v1
@@ -44,8 +67,18 @@ jobs:
         name: Build ${{ steps.date.outputs.date }}
         draft: false
         prerelease: false
+        body: |
+          ## Download
+          
+          Scan the QR code below to download the `.3dsx` file directly to your device:
+          
+          ![QR Code](https://github.com/${{ github.repository }}/releases/download/build-${{ steps.date.outputs.date }}-${{ github.sha }}/discord-3ds-qr.png)
+          
+          ### Direct Download
+          - [discord-3ds.3dsx](https://github.com/${{ github.repository }}/releases/download/build-${{ steps.date.outputs.date }}-${{ github.sha }}/discord-3ds.3dsx)
         files: |
           discord-3ds.3dsx
           discord-3ds.smdh
+          discord-3ds-qr.png
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

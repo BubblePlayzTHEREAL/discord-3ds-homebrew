@@ -5,6 +5,7 @@
 build/
 *.o
 *.d
+*-qr.png
 
 # Editor files
 .vscode/
