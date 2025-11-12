@@ -1,10 +1,9 @@
 #ifndef JSON_HELPER_H
 #define JSON_HELPER_H
 
+#include <stdbool.h>
 #define JSMN_HEADER
 #include "jsmn.h"
-
-#include <stdbool.h>
 
 // Helper function to compare JSON token with string
 bool json_token_equals(const char* json, jsmntok_t* tok, const char* s);

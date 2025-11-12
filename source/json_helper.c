@@ -1,7 +1,7 @@
-#define JSMN_STATIC
-#include "json_helper.h"
 #include <string.h>
 #include <stdio.h>
+#include "jsmn.h"
+#include "json_helper.h"
 
 bool json_token_equals(const char* json, jsmntok_t* tok, const char* s) {
     if (tok->type == JSMN_STRING && 

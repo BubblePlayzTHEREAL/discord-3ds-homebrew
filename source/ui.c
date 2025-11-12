@@ -158,7 +158,6 @@ void ui_handle_input(DiscordClient* client, UIState* state, u32 kDown, u32 kHeld
         }
     }
 }
-}
 
 void ui_cleanup(void) {
     // Nothing specific to cleanup for console-based UI
