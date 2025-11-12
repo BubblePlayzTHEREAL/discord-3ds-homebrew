@@ -65,7 +65,7 @@ void ui_render_bottom_screen(DiscordClient* client, UIState* state) {
     
     // Servers section
     printf("\x1b[1;37m=== Servers ===\x1b[0m\n");
-    for (int i = 0; i < client->server_count && i < 5; i++) {
+    for (int i = 0; i < client->server_count && i < 10; i++) {
         if (i == state->selected_server) {
             printf("\x1b[42;30m> %s\x1b[0m\n", client->servers[i].name);
         } else {
@@ -96,7 +96,7 @@ void ui_render_bottom_screen(DiscordClient* client, UIState* state) {
     
     // Chat input section
     printf("\n\x1b[1;37m=== Chat Input ===\x1b[0m\n");
-    printf("\x1b[47;30m[Press X for keyboard]\x1b[0m\n");
+    printf("[Press X for keyboard]\n");
     printf("\n");
     
     // Controls
